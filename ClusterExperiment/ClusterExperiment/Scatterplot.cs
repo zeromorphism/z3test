@@ -35,6 +35,7 @@ namespace ClusterExperiment
             this.sql = sql;
 
             SqlCommand cmd = new SqlCommand("SELECT Timeout,Note,Category FROM Experiments WHERE ID=" + eID1, sql);
+            cmd.CommandTimeout = 0;
             SqlDataReader r = cmd.ExecuteReader();
             string categoryX = "";
             if (r.Read())
@@ -47,6 +48,7 @@ namespace ClusterExperiment
 
             string categoryY = "";
             cmd = new SqlCommand("SELECT Timeout,Note,Category FROM Experiments WHERE ID=" + eID2, sql);
+            cmd.CommandTimeout = 0;
             r = cmd.ExecuteReader();
             if (r.Read())
             {
@@ -207,10 +209,11 @@ namespace ClusterExperiment
             if (fancy) query += " AND a.FilenameP=Strings.ID";
 
             SqlCommand cmd = new SqlCommand(query, sql);
+            cmd.CommandTimeout = 0;
             SqlDataReader r = null;
 
             double totalX = 0.0, totalY = 0.0;
-            uint total = 0, faster = 0, slower = 0;
+            uint total = 0, y_faster = 0, y_slower = 0;
 
             try
             {
@@ -236,7 +239,10 @@ namespace ClusterExperiment
                     if ( (!ckSAT.Checked && (sat1 > 0 || sat2 > 0)) ||
                          (!ckUNSAT.Checked && (unsat1 > 0 || unsat2 > 0)) ||
                          (!ckUNKNOWN.Checked && ( (rc1==0 && res1==0) || (rc2==0 && res2 == 0))) ||
-                         (!ckTIME.Checked && (rc1 == 5 || rc2 == 5)))
+                         (!ckBUG.Checked && (rc1 == 3 || rc2 == 3)) ||
+                         (!ckERROR.Checked && (rc1 == 4 || rc2 == 4)) ||
+                         (!ckTIME.Checked && (rc1 == 5 || rc2 == 5)) ||
+                         (!ckMEMORY.Checked && (rc1 == 6 || rc2 == 6)))
                         continue;
 
                     if ((rc1 != 0 && rc1 != 5) || (x != timeoutX && res1 == 0))
@@ -279,10 +285,9 @@ namespace ClusterExperiment
                             chart.Series[5].Points.AddXY(x, y);
                         else
                             chart.Series[3].Points.AddXY(x, y);
-
-                        if (x > y) faster++; else if (y > x) slower++;
                     }
 
+                    if (x > y) y_faster++; else if (y > x) y_slower++;
                     total++;
                 }
             }
@@ -293,15 +298,15 @@ namespace ClusterExperiment
             }
 
             double avgSpeedup = totalX / totalY;
-            lblAvgSpeedup.Text = Convert.ToString(avgSpeedup);
+            lblAvgSpeedup.Text = avgSpeedup.ToString("N3");
             if (avgSpeedup >= 1.0)
                 lblAvgSpeedup.ForeColor = Color.Green;
             else if (avgSpeedup < 1.0)
                 lblAvgSpeedup.ForeColor = Color.Red;
 
             lblTotal.Text = total.ToString();
-            lblFaster.Text = faster.ToString();
-            lblSlower.Text = slower.ToString();
+            lblFaster.Text = y_faster.ToString();
+            lblSlower.Text = y_slower.ToString();
         }
 
         private void ScatterTest_Load(object sender, EventArgs e)
@@ -312,43 +317,7 @@ namespace ClusterExperiment
             Mouse.OverrideCursor = null;
         }
 
-        private void cbFancy_CheckedChanged(object sender, EventArgs e)
-        {
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            fancy = cbFancy.Checked;
-            setupChart();
-            refreshChart();
-            Mouse.OverrideCursor = null;
-        }
-
-        private void ckSAT_CheckedChanged(object sender, EventArgs e)
-        {
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            fancy = cbFancy.Checked;
-            setupChart();
-            refreshChart();
-            Mouse.OverrideCursor = null;
-        }
-
-        private void ckUNSAT_CheckedChanged(object sender, EventArgs e)
-        {
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            fancy = cbFancy.Checked;
-            setupChart();
-            refreshChart();
-            Mouse.OverrideCursor = null;
-        }
-
-        private void ckUNKNOWN_CheckedChanged(object sender, EventArgs e)
-        {
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            fancy = cbFancy.Checked;
-            setupChart();
-            refreshChart();
-            Mouse.OverrideCursor = null;
-        }
-
-        private void ckTIME_CheckedChanged(object sender, EventArgs e)
+        private void ckCheckedChanged(object sender, EventArgs e)
         {
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             fancy = cbFancy.Checked;
